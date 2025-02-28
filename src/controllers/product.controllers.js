@@ -62,6 +62,8 @@ const getSingleProduct = async (req, res) => {
 
     const seller = await sellerDetail(product.seller);
 
+    console.log(seller);
+    
     const a = {
       product,
       seller: {
