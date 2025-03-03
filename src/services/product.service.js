@@ -75,6 +75,15 @@ const findProducts = async (payload) => {
   }
 };
 
+const filter = async (pipline) => {
+  try {
+    const product = await Product.aggregate(pipline);
+    return product;
+  } catch (error) {
+    throw error;
+  }
+};
+
 // const findCardByUid = async (uid) => {
 //   try {
 //     const cards = await Card.find({
@@ -123,4 +132,5 @@ module.exports = {
   countReview,
   sellerDetail,
   getReviews,
+  filter,
 };

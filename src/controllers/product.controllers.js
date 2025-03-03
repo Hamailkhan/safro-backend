@@ -6,6 +6,7 @@ const {
   countReview,
   sellerDetail,
   getReviews,
+  filter,
 } = require("../services/product.service");
 
 const getAllProducts = async (req, res) => {
@@ -26,9 +27,32 @@ const getAllProducts = async (req, res) => {
         (review) => review.productId.toString() === product._id.toString()
       );
 
+      const totalRating = productReviews.reduce(
+        (sum, review) => sum + review.rating,
+        0
+      );
+
+      const reviewCount = productReviews.length;
+      const averageRating = productReviews.length
+        ? totalRating / productReviews.length
+        : 0;
+
+      // return {
+      //   ...product._doc,
+      //   rating: Number(averageRating.toFixed(1)),
+      //   reviews: reviewCount,
+      // };
       return {
-        ...product._doc,
-        reviews: productReviews,
+        images: product.images,
+        name: product.name,
+        price: product.price,
+        categories: product.categories,
+        vendor: product.vendor,
+        tags: product.tags,
+        id: product._id,
+        rating: Number(averageRating.toFixed(1)),
+        discount: product.discount, // Assuming discount is optional
+        reviews: reviewCount,
       };
     });
 
@@ -61,8 +85,6 @@ const getSingleProduct = async (req, res) => {
     }
 
     const seller = await sellerDetail(product.seller);
-
-    console.log(seller);
 
     const a = {
       product,
@@ -130,53 +152,77 @@ const filterProduct = async (req, res) => {
   try {
     const { vendors, categories, tags, priceMin, priceMax } = req.query;
 
-    // Initialize empty filter object
-    const filter = {};
+    const pipeline = [];
 
-    // Agar vendors parameter diya gaya ho, to filter vendor ke hisaab se set karo
+    const matchStage = {};
+
     if (vendors) {
       const vendorsArr = vendors.split(",").map((v) => v.trim());
-      filter.vendor = { $in: vendorsArr };
+      matchStage.vendor = { $in: vendorsArr };
     }
 
-    // Agar categories parameter diya gaya ho, to filter categories ke hisaab se set karo
     if (categories) {
       const categoriesArr = categories.split(",").map((c) => c.trim());
-      filter.categories = { $in: categoriesArr };
+      matchStage.categories = { $in: categoriesArr };
     }
 
-    // Agar tags parameter diya gaya ho, to filter tags ke hisaab se set karo
     if (tags) {
       const tagsArr = tags.split(",").map((t) => t.trim());
-      filter.tags = { $in: tagsArr };
+      matchStage.tags = { $in: tagsArr };
     }
 
-    // Agar price range parameters diye gaye ho, to price filter set karo
     if (priceMin || priceMax) {
-      filter.price = {};
-      if (priceMin) {
-        filter.price.$gte = Number(priceMin);
-      }
-      if (priceMax) {
-        filter.price.$lte = Number(priceMax);
-      }
+      matchStage.price = {};
+      if (priceMin) matchStage.price.$gte = Number(priceMin);
+      if (priceMax) matchStage.price.$lte = Number(priceMax);
     }
 
-    // Ab filter object ke hisaab se products find karo.
-    // Agar koi parameter nahi diya gaya to filter {} hoga, jisse saare products return honge.
-    const products = await findProducts(filter);
-
-    if (!products || products.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: "No products found",
-        data: [],
-      });
+    // Ensure all conditions are met simultaneously
+    if (Object.keys(matchStage).length > 0) {
+      pipeline.push({ $match: { $and: [matchStage] } });
     }
+
+    pipeline.push(
+      {
+        $lookup: {
+          from: "reviews",
+          localField: "_id",
+          foreignField: "productId",
+          as: "reviews",
+        },
+      },
+      {
+        $addFields: {
+          rating: {
+            $cond: {
+              if: { $gt: [{ $size: "$reviews" }, 0] }, // Agar reviews hain
+              then: { $avg: "$reviews.rating" }, // Average rating calculate karo
+              else: 0, // Warna default 0 do
+            },
+          },
+          reviews: { $size: "$reviews" }, // Total reviews count
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          price: 1,
+          images: 1,
+          discount: 1,
+          rating: { $round: ["$rating", 1] }, // Round to 1 decimal
+          reviews: 1, // Total review count
+        },
+      }
+    );
+
+    const products = await filter(pipeline);
 
     return res.status(200).json({
       success: true,
-      message: "Filtered products found",
+      message: products.length
+        ? "Filtered products found"
+        : "No products found",
       data: products,
     });
   } catch (error) {
