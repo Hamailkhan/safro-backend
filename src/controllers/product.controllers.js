@@ -63,7 +63,7 @@ const getSingleProduct = async (req, res) => {
     const seller = await sellerDetail(product.seller);
 
     console.log(seller);
-    
+
     const a = {
       product,
       seller: {
@@ -96,7 +96,7 @@ const searchAndGetProduct = async (req, res) => {
     filter.$or = [
       { name: { $regex: q, $options: "i" } },
       { desc: { $regex: q, $options: "i" } },
-      { price: { $regex: q, $options: "i" } },
+      // { price: { $regex: q, $options: "i" } },
       { vendor: { $regex: q, $options: "i" } },
       { categories: { $in: [q] } },
       { tags: { $in: [q] } },
@@ -120,6 +120,69 @@ const searchAndGetProduct = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error searching for product",
+      error: error.message,
+      data: null,
+    });
+  }
+};
+
+const filterProduct = async (req, res) => {
+  try {
+    const { vendors, categories, tags, priceMin, priceMax } = req.query;
+
+    // Initialize empty filter object
+    const filter = {};
+
+    // Agar vendors parameter diya gaya ho, to filter vendor ke hisaab se set karo
+    if (vendors) {
+      const vendorsArr = vendors.split(",").map((v) => v.trim());
+      filter.vendor = { $in: vendorsArr };
+    }
+
+    // Agar categories parameter diya gaya ho, to filter categories ke hisaab se set karo
+    if (categories) {
+      const categoriesArr = categories.split(",").map((c) => c.trim());
+      filter.categories = { $in: categoriesArr };
+    }
+
+    // Agar tags parameter diya gaya ho, to filter tags ke hisaab se set karo
+    if (tags) {
+      const tagsArr = tags.split(",").map((t) => t.trim());
+      filter.tags = { $in: tagsArr };
+    }
+
+    // Agar price range parameters diye gaye ho, to price filter set karo
+    if (priceMin || priceMax) {
+      filter.price = {};
+      if (priceMin) {
+        filter.price.$gte = Number(priceMin);
+      }
+      if (priceMax) {
+        filter.price.$lte = Number(priceMax);
+      }
+    }
+
+    // Ab filter object ke hisaab se products find karo.
+    // Agar koi parameter nahi diya gaya to filter {} hoga, jisse saare products return honge.
+    const products = await findProducts(filter);
+
+    if (!products || products.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No products found",
+        data: [],
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Filtered products found",
+      data: products,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error filtering products",
       error: error.message,
       data: null,
     });
@@ -167,4 +230,5 @@ module.exports = {
   getSingleProduct,
   searchAndGetProduct,
   getProductReviews,
+  filterProduct,
 };
