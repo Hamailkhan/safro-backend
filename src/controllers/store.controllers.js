@@ -9,14 +9,12 @@ const getAllStores = async (req, res) => {
     const stores = await getStores();
 
     const payload = stores?.map((store) => {
-      const { id, storeName, storeDescription, storeCoverPhoto, storeLogo } =
-        store;
+      const { id, storeName, storeDescription, storeLogo } = store;
 
       return {
         id,
         storeName,
         storeDescription,
-        storeCoverPhoto,
         storeLogo,
       };
     });

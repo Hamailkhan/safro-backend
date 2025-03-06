@@ -4,7 +4,8 @@
   "description": "A RESTful API backend for an e-commerce application, featuring user authentication, product management, order handling, and payment processing.",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon ./api/index.js"
+    "start": "node ./api/index.js",
+    "start:dev": "nodemon ./api/index.js"
   },
   "keywords": [
     "e-commerce",
