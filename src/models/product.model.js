@@ -130,6 +130,7 @@ const productSchema = new Schema(
         required: true,
       },
     ],
+    //  IS COLLECTION KAI NAAM KO CHANGE KARNA HAI Q KAI YAI NAM MONGOOSE MAI US KI FUNCTIONALITY KO BREAK KAR RHA HAI WOH KHE RHA HAI KAI YAI NAAM AP APINAI RISK PAI ISTAMAL KAR RHAI HAIN
     collection: [
       {
         type: String,

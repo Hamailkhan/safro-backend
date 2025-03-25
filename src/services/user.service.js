@@ -80,12 +80,23 @@ const UpdateUserOtp = async (email, otp) => {
   }
 };
 
+// DELETE KARNA HAI YAI WALA FUNC
 const deleteTokensByUID = async (uid) => {
   try {
     const response = await Token.deleteMany({ user: uid });
     return response;
   } catch (error) {
     throw error;
+  }
+};
+
+const deleteTokensByToken = async (refreshToken) => {
+  try {
+    const result = await Token.deleteOne({ token: refreshToken });
+    return result; // `{ deletedCount: 1 }` return karega agar delete ho gaya
+  } catch (error) {
+    console.error("Error deleting token:", error);
+    return { deletedCount: 0 }; // Error aaye to zero return kare
   }
 };
 
@@ -421,4 +432,5 @@ module.exports = {
   checkStoreName,
   saveOrderItems,
   savePayment,
+  deleteTokensByToken,
 };

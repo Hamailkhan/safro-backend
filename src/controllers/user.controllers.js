@@ -30,6 +30,7 @@ const {
   checkStoreName,
   saveOrderItems,
   savePayment,
+  deleteTokensByToken,
 } = require("../services/user.service");
 const { createHash, compareHash } = require("../utils/hash.utils");
 const { config } = require("../config/server.config");
@@ -41,24 +42,27 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // ✅ Pehle check karein ke kya browser already kisi account se logged in hai
+    if (req.cookies.refreshToken) {
+      return res.status(409).json({
+        success: false,
+        message: "Already logged in from this browser. Please logout first.",
+        data: null,
+      });
+    }
+
     const user = await findByEmail(email);
     if (!user)
       return res
         .status(401)
-        .json({ success: false, message: "invalid credentials", data: null });
+        .json({ success: false, message: "Invalid credentials", data: null });
 
     if (!user.isActive)
       return res.status(401).json({
         success: false,
-        message: "please verify your account first",
+        message: "Please verify your account first",
         data: null,
       });
-
-    const isAlreadyLoggedIn = await getTokenByUID(user.id);
-    if (isAlreadyLoggedIn?.length > 0)
-      return res
-        .status(409)
-        .json({ success: false, message: "Already logged in", data: null });
 
     const passwordMatch = await compareHash(password, user.password);
     if (!passwordMatch)
@@ -66,18 +70,27 @@ const login = async (req, res) => {
         .status(401)
         .json({ success: false, message: "Invalid credentials", data: null });
 
-    const token = jwt.sign(
-      { email: user.email, username: user.username },
-      config.secret,
-      { expiresIn: "24h" }
-    );
+    const accessToken = jwt.sign({ id: user.id }, config.secret, {
+      expiresIn: "15m",
+    });
 
-    const generateToken = await saveToken({ token, user: user.id });
+    const refreshToken = jwt.sign({ id: user.id }, config.secret, {
+      expiresIn: "7d",
+    });
+
+    await saveToken({ token: refreshToken, user: user.id });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: false, // Enable in production (HTTPS required)
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
     return res.status(200).json({
       success: true,
-      message: "Login successfully",
-      data: user.id,
+      message: "Login successful",
+      accessToken, // Frontend will use this for API requests
     });
   } catch (error) {
     return res.status(500).json({
@@ -89,14 +102,7 @@ const login = async (req, res) => {
 
 const register = async (req, res) => {
   try {
-    const {
-      username,
-      email,
-      password,
-      phone,
-      accountType: role,
-      ...otherFields
-    } = req.body;
+    const { username, email, password, phone } = req.body;
 
     const user = await findByEmail(email);
     if (user) {
@@ -111,12 +117,12 @@ const register = async (req, res) => {
         .json({ success: false, message: "Email Already Exist" });
     }
 
-    const checkStore = await checkStoreName(otherFields.storeName);
-    if (checkStore) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Store Name Already Exist" });
-    }
+    // const checkStore = await checkStoreName(otherFields.storeName);
+    // if (checkStore) {
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, message: "Store Name Already Exist" });
+    // }
 
     const hashedPassword = await createHash(password);
 
@@ -125,7 +131,7 @@ const register = async (req, res) => {
       email,
       phone,
       password: hashedPassword,
-      role,
+      // role,
     };
 
     const newUser = await createUser(payload);
@@ -135,19 +141,21 @@ const register = async (req, res) => {
         .json({ success: false, message: "Something went wrong" });
     }
 
-    if (role === "seller") {
-      const sellerPayload = {
-        userId: newUser.id,
-        ...otherFields,
-      };
+    // STORE NAME VERIFICATION ADD KARNI HAI JO DEKHAI KAI YAI NAAM EXIST TO NHI KARTA
 
-      const newSeller = await createSeller(sellerPayload);
-      if (!newSeller) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Failed to create seller account" });
-      }
-    }
+    // if (role === "seller") {
+    //   const sellerPayload = {
+    //     userId: newUser.id,
+    //     ...otherFields,
+    //   };
+
+    //   const newSeller = await createSeller(sellerPayload);
+    //   if (!newSeller) {
+    //     return res
+    //       .status(400)
+    //       .json({ success: false, message: "Failed to create seller account" });
+    //   }
+    // }
 
     return res
       .status(200)
@@ -240,52 +248,99 @@ const resendOtp = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
-    const { uid } = req.params;
-
-    const logoutUser = await deleteTokensByUID(uid);
-    if (logoutUser.deletedCount === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Already logged out", data: null });
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Already logged out",
+        data: null,
+      });
     }
 
-    return res
-      .status(200)
-      .json({ success: true, message: "Successfully logged out", data: null });
+    // ✅ Refresh token database se delete karein
+    const logoutUser = await deleteTokensByToken(refreshToken);
+    if (logoutUser.deletedCount === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Already logged out",
+        data: null,
+      });
+    }
+
+    // ✅ Cookies se token remove karein
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: false, // Production mai true karein
+      sameSite: "Strict",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Successfully logged out",
+      data: null,
+    });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ success: false, message: "Something went wrong", data: null });
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+      data: null,
+    });
+  }
+};
+
+const refreshAccessToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    jwt.verify(refreshToken, config.secret, (err, decoded) => {
+      if (err) {
+        return res
+          .status(403)
+          .json({ success: false, message: "Invalid refresh token" });
+      }
+
+      const newAccessToken = jwt.sign({ id: decoded.id }, config.secret, {
+        expiresIn: "15m",
+      });
+
+      return res
+        .status(200)
+        .json({ success: true, accessToken: newAccessToken });
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 };
 
 const profile = async (req, res) => {
   try {
-    const { uid } = req.params;
+    const user = await getUserByUid(req.user.id); // ✅ Middleware ke decoded user ka data le liya
 
-    const user = await getUserByUid(uid);
-    if (!user)
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found",
         data: null,
       });
+    }
 
-    const { username, email, cart } = user;
+    const { username, email, cart, role } = user;
 
-    const data = {
-      username,
-      email,
-      cart,
-    };
-
-    return res
-      .status(200)
-      .json({ success: true, message: "User Found", data: data });
+    return res.status(200).json({
+      success: true,
+      message: "User Found",
+      data: { username, email, cart, role },
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "There is no user profile",
+      message: "Something went wrong",
       data: null,
     });
   }
@@ -780,4 +835,5 @@ module.exports = {
   deleteCart,
   Contact,
   checkOut,
+  refreshAccessToken,
 };
