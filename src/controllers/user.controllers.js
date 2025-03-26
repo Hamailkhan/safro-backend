@@ -497,8 +497,10 @@ const updateUser = async (req, res) => {
 
 const addReview = async (req, res) => {
   try {
-    const { pid, uid, sid } = req.params;
+    const { pid, sid } = req.params;
     const { rating, comment } = req.body;
+
+    const uid = req.user.id;
 
     const user = await findUserByUid(uid);
     if (!user) {
@@ -545,7 +547,9 @@ const addReview = async (req, res) => {
 
 const addToCard = async (req, res) => {
   try {
-    const { id, uid } = req.params;
+    const { id } = req.params;
+
+    const uid = req.user.id;
 
     const product = await getProductById(id);
     if (!product) {
@@ -588,10 +592,12 @@ const addToCard = async (req, res) => {
   }
 };
 
-const addCardQty = async (req, res) => {
+const updateCardQty = async (req, res) => {
   try {
-    const { id, uid } = req.params;
+    const { id } = req.params;
     const { qty } = req.body;
+
+    const uid = req.user.id;
 
     const cart = await findCartByUserId(uid);
     if (!cart) {
@@ -616,11 +622,11 @@ const addCardQty = async (req, res) => {
   }
 };
 
-const getSingleAddCard = async (req, res) => {
+const getUserAddToCard = async (req, res) => {
   try {
-    const { uid } = req.params;
+    const id = req.user.id;
 
-    const cart = await getUserForCart(uid);
+    const cart = await getUserForCart(id);
     if (!cart) {
       return res.status(404).json({
         success: false,
@@ -657,7 +663,10 @@ const getSingleAddCard = async (req, res) => {
 
 const deleteCart = async (req, res) => {
   try {
-    const { uid, id } = req.params;
+    const { id } = req.params;
+
+    const uid = req.user.id;
+
     const cart = await findCartAndDelete(uid, id);
     if (!cart) {
       return res.status(404).json({
@@ -682,13 +691,13 @@ const deleteCart = async (req, res) => {
 
 const Contact = async (req, res) => {
   try {
-    const { name, email, message } = req.body;
+    const { name, email, message, phone } = req.body;
 
     const payload = {
       from: email,
       to: "hamailkhan213@gmail.com",
       subject: name,
-      text: `${email} ${message}`,
+      html: `Email: ${email} <br/> Phone:${phone} <br/> Message: ${message} `,
     };
 
     const resendPayload = {
@@ -758,10 +767,10 @@ const Contact = async (req, res) => {
 
 const checkOut = async (req, res) => {
   try {
-    const { userId, shippingAddress, items, totalAmount } = req.body;
+    const { shippingAddress, items, totalAmount } = req.body;
 
     const newOrder = await createOrder({
-      userId,
+      userId: req.user.id,
       shippingAddress,
       totalAmount,
     });
@@ -830,8 +839,8 @@ module.exports = {
   updateUser,
   addReview,
   addToCard,
-  getSingleAddCard,
-  addCardQty,
+  getUserAddToCard,
+  updateCardQty,
   deleteCart,
   Contact,
   checkOut,

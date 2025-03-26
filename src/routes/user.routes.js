@@ -13,8 +13,8 @@ const {
   updateUser,
   addReview,
   addToCard,
-  getSingleAddCard,
-  addCardQty,
+  getUserAddToCard,
+  updateCardQty,
   deleteCart,
   Contact,
   checkOut,
@@ -32,19 +32,19 @@ route.post("/resend-otp", resendOtp);
 route.post("/logout", logout);
 route.post("/forgot-password", forgotPassword);
 route.post("/reset-password", resetPassword);
-route.post("/add-review/:pid/:uid/:sid", addReview);
-route.post("/add-to-cart/:id/:uid", addToCard);
+route.post("/add-review/:pid/:sid", authenticateUser, addReview);
+route.post("/add-to-cart/:id", authenticateUser, addToCard);
 route.post("/contact-us", Contact);
-route.post("/check-out", checkOut);
+route.post("/check-out", authenticateUser, checkOut);
 route.post("/refresh-token", refreshAccessToken);
 
 route.delete("/delete-user/:id", deleteUser);
-route.delete("/delete-cart/:uid/:id", deleteCart);
+route.delete("/delete-cart/:id", authenticateUser, deleteCart);
 
 route.put("/update-user", updateUser);
-route.put("/update-cart-qty/:id/:uid", addCardQty);
+route.put("/update-cart-qty/:id", authenticateUser, updateCardQty);
 
-route.get("/get-cart-products/:uid", getSingleAddCard);
+route.get("/get-cart-products", authenticateUser, getUserAddToCard);
 route.get("/user-profile", authenticateUser, profile);
 route.get("/users", user);
 
