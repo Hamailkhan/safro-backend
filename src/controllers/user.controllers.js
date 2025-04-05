@@ -31,6 +31,7 @@ const {
   saveOrderItems,
   savePayment,
   deleteTokensByToken,
+  getUserCartLenght,
 } = require("../services/user.service");
 const { createHash, compareHash } = require("../utils/hash.utils");
 const { config } = require("../config/server.config");
@@ -320,7 +321,7 @@ const refreshAccessToken = async (req, res) => {
 
 const profile = async (req, res) => {
   try {
-    const user = await getUserByUid(req.user.id); // ✅ Middleware ke decoded user ka data le liya
+    const user = await getUserByUid(req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -330,12 +331,36 @@ const profile = async (req, res) => {
       });
     }
 
-    const { username, email, cart, role } = user;
+    const { username, email, role, phone } = user;
+
+    const cart = await getUserCartLenght(req.user.id);
+    if (!cart) {
+      const payload = {
+        username,
+        email,
+        role,
+        phone,
+      };
+
+      return res.status(200).json({
+        success: true,
+        message: "User Found",
+        data: payload,
+      });
+    }
+
+    const payload = {
+      username,
+      email,
+      role,
+      phone,
+      cart: cart?.items,
+    };
 
     return res.status(200).json({
       success: true,
       message: "User Found",
-      data: { username, email, cart, role },
+      data: payload,
     });
   } catch (error) {
     return res.status(500).json({
@@ -689,7 +714,7 @@ const deleteCart = async (req, res) => {
   }
 };
 
-const Contact = async (req, res) => {
+const contact = async (req, res) => {
   try {
     const { name, email, message, phone } = req.body;
 
@@ -842,7 +867,7 @@ module.exports = {
   getUserAddToCard,
   updateCardQty,
   deleteCart,
-  Contact,
+  contact,
   checkOut,
   refreshAccessToken,
 };

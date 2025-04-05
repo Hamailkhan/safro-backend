@@ -278,12 +278,21 @@ const getUserForCart = async (uid) => {
   }
 };
 
+const getUserCartLenght = async (uid) => {
+  try {
+    const cart = await AddToCard.findOne({ userId: uid });
+    return cart;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const findCartAndDelete = async (uid, id) => {
   try {
-    const deleteCart = await AddToCard.findOneAndDelete(
+    const deleteCart = await AddToCard.findOneAndUpdate(
       { userId: uid },
-      { $pull: { items: { productId: id } } }, // Removes the item with matching productId
-      { new: true } // Return the updated user document
+      { $pull: { items: { productId: id } } },
+      { new: true }
     );
 
     return deleteCart;
@@ -433,4 +442,5 @@ module.exports = {
   saveOrderItems,
   savePayment,
   deleteTokensByToken,
+  getUserCartLenght,
 };

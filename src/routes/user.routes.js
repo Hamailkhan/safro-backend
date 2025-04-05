@@ -16,7 +16,7 @@ const {
   getUserAddToCard,
   updateCardQty,
   deleteCart,
-  Contact,
+  contact,
   checkOut,
   refreshAccessToken,
 } = require("../controllers/user.controllers");
@@ -34,7 +34,7 @@ route.post("/forgot-password", forgotPassword);
 route.post("/reset-password", resetPassword);
 route.post("/add-review/:pid/:sid", authenticateUser, addReview);
 route.post("/add-to-cart/:id", authenticateUser, addToCard);
-route.post("/contact-us", Contact);
+route.post("/contact-us", contact);
 route.post("/check-out", authenticateUser, checkOut);
 route.post("/refresh-token", refreshAccessToken);
 
