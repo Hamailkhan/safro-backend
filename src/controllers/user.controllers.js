@@ -1,4 +1,8 @@
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const FormData = require("form-data");
+const axios = require("axios");
+
 const {
   findByEmail,
   createUser,
@@ -32,6 +36,8 @@ const {
   savePayment,
   deleteTokensByToken,
   getUserCartLenght,
+  storeCreated,
+  updateRole,
 } = require("../services/user.service");
 const { createHash, compareHash } = require("../utils/hash.utils");
 const { config } = require("../config/server.config");
@@ -42,8 +48,6 @@ const { getProductById } = require("../services/product.service");
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // ✅ Pehle check karein ke kya browser already kisi account se logged in hai
     if (req.cookies.refreshToken) {
       return res.status(409).json({
         success: false,
@@ -850,6 +854,93 @@ const checkOut = async (req, res) => {
   }
 };
 
+const createStore = async (req, res) => {
+  try {
+    const { storeName, storeDescription, address } = req.body;
+
+    const uid = req.user.id;
+
+    const user = await getUserByUid(uid);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        data: null,
+      });
+    }
+
+    const formData = new FormData();
+
+    formData.append(
+      "storeLogo",
+      fs.createReadStream(req.files.storeLogo[0].path),
+      req.files.storeLogo[0].originalname
+    );
+
+    formData.append(
+      "storeCover",
+      fs.createReadStream(req.files.storeCover[0].path),
+      req.files.storeCover[0].originalname
+    );
+
+    const uploadRes = await axios.post(
+      "http://localhost:8006/image/upload-store-image",
+      formData,
+      {
+        headers: {
+          ...formData.getHeaders(),
+        },
+      }
+    );
+
+    const uploadedImage = uploadRes.data;
+
+    const { storeLogo, storeCover } = uploadedImage.images;
+
+    const payload = {
+      userId: user.id,
+      storeName,
+      storeDescription,
+      storeLogo: storeLogo.url,
+      storeLogoID: storeLogo.public_id,
+      storeCoverPhoto: storeCover.url,
+      storeCoverPhotoId: storeCover.public_id,
+      address: JSON.parse(address),
+    };
+
+    const storeCreate = await storeCreated(payload);
+    if (!storeCreate) {
+      return res.status(400).json({
+        success: false,
+        message: "Store Created failed",
+      });
+    }
+
+    const updateUserRole = await updateRole(user.id, "seller");
+    if (!updateUserRole) {
+      return res.status(400).json({
+        success: false,
+        message: "Update user role failed",
+      });
+    }
+
+    fs.unlinkSync(req.files.storeLogo[0].path);
+    fs.unlinkSync(req.files.storeCover[0].path);
+
+    return res.status(201).json({
+      success: true,
+      message: "Store created successfully",
+      store: storeCreate,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create store",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   login,
   register,
@@ -870,4 +961,5 @@ module.exports = {
   contact,
   checkOut,
   refreshAccessToken,
+  createStore,
 };

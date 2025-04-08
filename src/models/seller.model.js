@@ -5,7 +5,7 @@ const { Schema, model } = mongoose;
 const SellerSchema = new Schema(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
     },
     storeName: {
@@ -21,7 +21,15 @@ const SellerSchema = new Schema(
       type: String,
       required: true,
     },
+    storeLogoID: {
+      type: String,
+      required: true,
+    },
     storeCoverPhoto: {
+      type: String,
+      required: true,
+    },
+    storeCoverPhotoId: {
       type: String,
       required: true,
     },

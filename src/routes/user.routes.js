@@ -19,9 +19,11 @@ const {
   contact,
   checkOut,
   refreshAccessToken,
+  createStore,
 } = require("../controllers/user.controllers");
 const { signupRouteValidator } = require("../validators/request.validator");
 const authenticateUser = require("../middleware/authMiddleware");
+const upload = require("../middleware/multer.middleware");
 
 const route = express.Router();
 
@@ -37,6 +39,18 @@ route.post("/add-to-cart/:id", authenticateUser, addToCard);
 route.post("/contact-us", contact);
 route.post("/check-out", authenticateUser, checkOut);
 route.post("/refresh-token", refreshAccessToken);
+
+route.post(
+  "/create-store",
+  [
+    authenticateUser,
+    upload.fields([
+      { name: "storeLogo", maxCount: 1 },
+      { name: "storeCover", maxCount: 1 },
+    ]),
+  ],
+  createStore
+);
 
 route.delete("/delete-user/:id", deleteUser);
 route.delete("/delete-cart/:id", authenticateUser, deleteCart);

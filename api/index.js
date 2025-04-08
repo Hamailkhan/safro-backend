@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const bodyParser = require("body-parser");
+const fileUpload = require("express-fileupload");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const { config } = require("../src/config/server.config");
@@ -23,6 +25,13 @@ connectToDB()
   })
   .catch((err) => console.log(err.message));
 
+// app.use(
+//   fileUpload({
+//     limits: { fileSize: Infinity },
+//   })
+// );
+// app.use(bodyParser.json());
+// app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors(corsOptions));
 app.use(cookieParser());
@@ -48,18 +57,18 @@ app.use("/store", StoreRoute);
 app.use("/payment", PaymentRoute);
 app.use("/global", GlobalRoutes);
 
-app.get("*", (req, res) => {
-  return res.status(404).json({
-    success: true,
-    message: "Invalid Route",
-    data: null,
-  });
-});
-
 app.get("/", (req, res) => {
   return res.status(200).json({
     success: true,
     message: "Welcome to the API",
+    data: null,
+  });
+});
+
+app.use((req, res) => {
+  return res.status(404).json({
+    success: true,
+    message: "Invalid Route",
     data: null,
   });
 });

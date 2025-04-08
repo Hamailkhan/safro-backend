@@ -410,6 +410,35 @@ const savePayment = async (payload) => {
   }
 };
 
+const storeCreated = async (payload) => {
+  try {
+    const newSeller = new Seller({ ...payload });
+    const seller = await newSeller.save();
+    return seller;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const updateRole = async (id, role) => {
+  try {
+    const user = await User.findOneAndUpdate(
+      {
+        _id: id,
+      },
+      {
+        $set: {
+          role: role,
+        },
+      },
+      { new: true }
+    );
+    return user;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   createUser,
   findByEmail,
@@ -443,4 +472,6 @@ module.exports = {
   savePayment,
   deleteTokensByToken,
   getUserCartLenght,
+  storeCreated,
+  updateRole,
 };
