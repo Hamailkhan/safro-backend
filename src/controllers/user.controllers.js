@@ -44,6 +44,7 @@ const { config } = require("../config/server.config");
 const { sendEmail } = require("../services/mail.service");
 const { generateOtp } = require("../utils/generateOtp.util");
 const { getProductById } = require("../services/product.service");
+const uploadRoute = require("../microserviceApi/upload.microservices");
 
 const login = async (req, res) => {
   try {
@@ -883,15 +884,11 @@ const createStore = async (req, res) => {
       req.files.storeCover[0].originalname
     );
 
-    const uploadRes = await axios.post(
-      "http://localhost:8006/image/upload-store-image",
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(),
-        },
-      }
-    );
+    const uploadRes = await axios.post(uploadRoute.storeImage, formData, {
+      headers: {
+        ...formData.getHeaders(),
+      },
+    });
 
     const uploadedImage = uploadRes.data;
 

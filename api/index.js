@@ -25,13 +25,6 @@ connectToDB()
   })
   .catch((err) => console.log(err.message));
 
-// app.use(
-//   fileUpload({
-//     limits: { fileSize: Infinity },
-//   })
-// );
-// app.use(bodyParser.json());
-// app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors(corsOptions));
 app.use(cookieParser());
