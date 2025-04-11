@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const bodyParser = require("body-parser");
-const fileUpload = require("express-fileupload");
+// const bodyParser = require("body-parser");
+// const fileUpload = require("express-fileupload");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const { config } = require("../src/config/server.config");

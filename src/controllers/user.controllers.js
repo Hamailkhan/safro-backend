@@ -35,7 +35,7 @@ const {
   saveOrderItems,
   savePayment,
   deleteTokensByToken,
-  getUserCartLenght,
+  getUserCartLength,
   storeCreated,
   updateRole,
 } = require("../services/user.service");
@@ -263,7 +263,7 @@ const logout = async (req, res) => {
       });
     }
 
-    // ✅ Refresh token database se delete karein
+    // ✅ Refresh token database se delete karen
     const logoutUser = await deleteTokensByToken(refreshToken);
     if (logoutUser.deletedCount === 0) {
       return res.status(400).json({
@@ -338,7 +338,7 @@ const profile = async (req, res) => {
 
     const { username, email, role, phone } = user;
 
-    const cart = await getUserCartLenght(req.user.id);
+    const cart = await getUserCartLength(req.user.id);
     if (!cart) {
       const payload = {
         username,

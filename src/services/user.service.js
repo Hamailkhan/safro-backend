@@ -278,7 +278,7 @@ const getUserForCart = async (uid) => {
   }
 };
 
-const getUserCartLenght = async (uid) => {
+const getUserCartLength = async (uid) => {
   try {
     const cart = await AddToCard.findOne({ userId: uid });
     return cart;
@@ -471,7 +471,7 @@ module.exports = {
   saveOrderItems,
   savePayment,
   deleteTokensByToken,
-  getUserCartLenght,
+  getUserCartLength,
   storeCreated,
   updateRole,
 };
