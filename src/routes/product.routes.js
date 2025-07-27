@@ -15,10 +15,6 @@ route.get("/product-reviews/:id", getProductReviews);
 route.get("/search", searchAndGetProduct);
 route.get("/filter-product", filterProduct);
 
-route.post("/upload-img", async (req, res) => {
-  console.log(req.file);
-});
-
 module.exports = {
   route,
 };

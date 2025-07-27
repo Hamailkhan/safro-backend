@@ -76,13 +76,9 @@ const login = async (req, res) => {
         .status(401)
         .json({ success: false, message: "Invalid credentials", data: null });
 
-    const accessToken = jwt.sign({ id: user.id }, config.secret, {
-      expiresIn: "15m",
-    });
+    const accessToken = jwt.sign({ id: user.id }, config.secret);
 
-    const refreshToken = jwt.sign({ id: user.id }, config.secret, {
-      expiresIn: "7d",
-    });
+    const refreshToken = jwt.sign({ id: user.id }, config.secret);
 
     await saveToken({ token: refreshToken, user: user.id });
 
@@ -123,13 +119,6 @@ const register = async (req, res) => {
         .json({ success: false, message: "Email Already Exist" });
     }
 
-    // const checkStore = await checkStoreName(otherFields.storeName);
-    // if (checkStore) {
-    //   return res
-    //     .status(400)
-    //     .json({ success: false, message: "Store Name Already Exist" });
-    // }
-
     const hashedPassword = await createHash(password);
 
     const payload = {
@@ -146,22 +135,6 @@ const register = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Something went wrong" });
     }
-
-    // STORE NAME VERIFICATION ADD KARNI HAI JO DEKHAI KAI YAI NAAM EXIST TO NHI KARTA
-
-    // if (role === "seller") {
-    //   const sellerPayload = {
-    //     userId: newUser.id,
-    //     ...otherFields,
-    //   };
-
-    //   const newSeller = await createSeller(sellerPayload);
-    //   if (!newSeller) {
-    //     return res
-    //       .status(400)
-    //       .json({ success: false, message: "Failed to create seller account" });
-    //   }
-    // }
 
     return res
       .status(200)

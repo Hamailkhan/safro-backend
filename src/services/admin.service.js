@@ -7,6 +7,7 @@ const {
   seller: Seller,
   orderItem: OrderItem,
   review: Review,
+  user: User,
 } = db;
 
 const saveProduct = async (payload) => {
@@ -177,6 +178,15 @@ const findOrderItemsByOrderId = async (orderIds, storeId) => {
   }
 };
 
+const findSellerRoleByUid = async (id) => {
+  try {
+    const seller = await User.findOne({ _id: id });
+    return seller;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   saveProduct,
   ProductDelete,
@@ -192,4 +202,5 @@ module.exports = {
   findByIdAndDeleteReview,
   findOrderByDate,
   findOrderItemsByOrderId,
+  findSellerRoleByUid,
 };

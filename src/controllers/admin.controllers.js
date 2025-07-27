@@ -1,3 +1,6 @@
+const axios = require("axios");
+const fs = require("fs");
+const FormData = require("form-data");
 const {
   saveProduct,
   ProductDelete,
@@ -14,11 +17,13 @@ const {
   findOrderByDate,
   findOrderItemsByOrderId,
 } = require("../services/admin.service");
+const uploadRoute = require("../microserviceApi/upload.microservices");
 
 const addProduct = async (req, res) => {
   try {
-    const { uid } = req.params;
-    const data = req.body;
+    const data = JSON.parse(req.body.data);
+
+    const uid = req.user.id;
 
     const seller = await findSellerByUId(uid);
     if (!seller) {
@@ -28,13 +33,41 @@ const addProduct = async (req, res) => {
       });
     }
 
+    const formData = new FormData();
+
+    req.files.forEach((file) => {
+      formData.append("productImages", fs.createReadStream(file.path));
+    });
+
+    const uploadRes = await axios.post(uploadRoute.productImage, formData, {
+      headers: {
+        ...formData.getHeaders(),
+      },
+    });
+
+    const uploadedImage = uploadRes.data;
+
+    req.files.forEach((file) => {
+      fs.unlink(file.path, (err) => {
+        if (err) console.error(`Error deleting file ${file.path}:`, err);
+      });
+    });
+
+    if (!uploadedImage.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Image upload failed",
+      });
+    }
+
     const payload = {
       seller: seller.id,
       ...data,
+      images: uploadedImage.images,
     };
 
-    const add = await saveProduct(payload);
-    if (!add) {
+    const product = await saveProduct(payload);
+    if (!product) {
       return res.status(400).json({
         success: false,
         message: "Product not added",
@@ -45,7 +78,7 @@ const addProduct = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Add product successfully",
-      data: payload,
+      data: product,
     });
   } catch (error) {
     return res.status(500).json({
@@ -57,7 +90,7 @@ const addProduct = async (req, res) => {
   }
 };
 
-const DeleteProduct = async (req, res) => {
+const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -335,7 +368,7 @@ const deleteFeedBack = async (req, res) => {
 
 module.exports = {
   addProduct,
-  DeleteProduct,
+  deleteProduct,
   UpdateProduct,
   getAllOrders,
   updateOrder,
